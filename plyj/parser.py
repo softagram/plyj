@@ -1,8 +1,8 @@
 #!/usr/bin/env python2
 
-import ply.lex as lex
-import ply.yacc as yacc
-from .model import *
+from ply import lex
+from ply import yacc
+from plyj.model import *
 
 class MyLexer(object):
 
@@ -71,7 +71,8 @@ class MyLexer(object):
     t_RRSHIFT_ASSIGN = '>>>='
     t_AND_ASSIGN = '&='
     t_OR_ASSIGN = r'\|='
-    t_XOR_ASSIGN = '\^='
+    # softagram-edit: added \ to fix DeprecationWarning: invalid escape sequence \^
+    t_XOR_ASSIGN = '\\^='
 
     t_PLUSPLUS = r'\+\+'
     t_MINUSMINUS = r'\-\-'
@@ -2004,7 +2005,7 @@ class MyParser(ExpressionParser, NameParser, LiteralParser, TypeParser, ClassPar
 class Parser(object):
 
     def __init__(self):
-        self.lexer = lex.lex(module=MyLexer(), optimize=1)
+        self.lexer = lex.lex(module=MyLexer())
         self.parser = yacc.yacc(module=MyParser(), start='goal', optimize=1)
 
     def tokenize_string(self, code):
@@ -2030,10 +2031,12 @@ class Parser(object):
         self.lexer.lineno = lineno
         return self.parser.parse(prefix + code, lexer=self.lexer, debug=debug)
 
-    def parse_file(self, _file, debug=0):
+    def parse_file(self, _file, debug=0, converter=None):
         if type(_file) == str:
             _file = open(_file)
         content = _file.read()
+        if converter is not None:
+            content = converter(content)
         return self.parse_string(content, debug=debug)
 
 if __name__ == '__main__':
